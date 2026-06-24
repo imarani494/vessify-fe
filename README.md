@@ -1,509 +1,264 @@
-# Backend Implementation Specification
+# TxnFlow — Frontend
 
-## Overview
+> Secure Multi-Tenant Personal Finance Transaction Extractor  
+> Built with Next.js 15 · TypeScript · shadcn/ui · Better Auth · Tailwind CSS
 
-Build the backend for a multi-tenant transaction extraction platform.
-
-The backend must use:
-
-* TypeScript
-* Hono
-* Better Auth
-* Prisma ORM
-* PostgreSQL
-
-The backend is responsible for:
-
-* Authentication
-* Session management
-* JWT support
-* Multi-tenancy
-* Transaction extraction
-* Transaction storage
-* Data isolation
-* Cursor pagination
+![TxnFlow Landing](./screenshot/Screenshot%20(1620).png)
+![TxnFlow Features](./screenshot/Screenshot%20(1621).png)
+![TxnFlow Dashboard](./screenshot/Screenshot%20(1622).png)
+![TxnFlow Transactions](./screenshot/Screenshot%20(1623).png)
 
 ---
 
-# Tech Stack
+## Project Structure
 
-## Required
-
-* Runtime: Node.js
-* Framework: Hono
-* Language: TypeScript
-* Database: PostgreSQL
-* ORM: Prisma
-* Authentication: Better Auth
-* Validation: Zod
-* Testing: Vitest
-
----
-
-# Folder Structure
-
-```text
-backend/
-│
-├── prisma/
-│   ├── schema.prisma
-│   └── migrations/
-│
-├── src/
-│   │
-│   ├── auth/
-│   │   ├── auth.ts
-│   │   ├── auth-config.ts
-│   │   └── middleware.ts
-│   │
-│   ├── routes/
-│   │   ├── auth.routes.ts
-│   │   └── transaction.routes.ts
-│   │
-│   ├── services/
-│   │   ├── extraction.service.ts
-│   │   └── transaction.service.ts
-│   │
-│   ├── validators/
-│   │   ├── auth.validator.ts
-│   │   └── transaction.validator.ts
-│   │
-│   ├── lib/
-│   │   ├── prisma.ts
-│   │   └── env.ts
-│   │
-│   ├── types/
-│   │
-│   ├── app.ts
-│   └── index.ts
-│
-├── tests/
-│
-├── .env.example
-├── package.json
-└── README.md
+```
+vessify-frontend/
+├── .next/                          # Next.js build output (auto-generated)
+├── .vscode/                        # VS Code workspace settings
+├── app/                            # Next.js 15 App Router
+│   ├── (auth)/                     # Auth route group (no shared layout)
+│   │   ├── login/
+│   │   │   └── page.tsx            # /login — shadcn form + Better Auth
+│   │   └── register/
+│   │       └── page.tsx            # /register — shadcn form + Better Auth
+│   └── (dashboard)/                # Protected route group
+│       └── dashboard/
+│           └── page.tsx            # /dashboard — stats + extractor + table
+├── components/                     # Reusable UI components
+├── lib/                            # Utilities and config
+├── public/                         # Static assets
+├── screenshot/                     # App screenshots (for README)
+│   ├── Screenshot (1620).png
+│   ├── Screenshot (1621).png
+│   ├── Screenshot (1622).png
+│   └── Screenshot (1623).png
+├── node_modules/                   # Dependencies
+├── .env.local                      # Local environment variables (git-ignored)
+├── .gitignore
+├── AGENTS.md                       # Agent/AI tool usage notes
+├── CLAUDE.md                       # Claude-specific instructions
+├── components.json                 # shadcn/ui component registry config
+├── eslint.config.mjs               # ESLint flat config
+├── favicon.ico
+├── globals.css                     # Global Tailwind CSS styles
+├── layout.tsx                      # Root layout (fonts, providers)
+├── next-env.d.ts                   # Next.js TypeScript declarations
+├── next.config.ts                  # Next.js configuration
+├── package.json                    # Dependencies and scripts
+├── package-lock.json               # Lockfile
+├── postcss.config.mjs              # PostCSS config (Tailwind)
+├── README.md                       # This file
+└── tsconfig.json                   # TypeScript strict config
 ```
 
 ---
 
-# Authentication
+## Tech Stack
 
-Use Better Auth as the primary authentication system.
-
-Requirements:
-
-* Email + Password Authentication
-* JWT Support
-* Session Management
-* Password Hashing
-* Protected Routes
-* Organization Support
-
-## Better Auth Plugins
-
-Enable:
-
-* Organization Plugin
-* JWT Plugin
-
-Every user should automatically receive an organization during registration.
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 15 (App Router) |
+| Language | TypeScript (strict) |
+| Styling | Tailwind CSS + shadcn/ui |
+| Auth | Better Auth (session + JWT) |
+| Deployment | Vercel |
 
 ---
 
-# Registration Flow
+## Prerequisites
 
-## Endpoint
-
-```http
-POST /api/auth/register
-```
-
-### Request
-
-```json
-{
-  "email": "john@example.com",
-  "password": "password123"
-}
-```
-
-### Process
-
-1. Create user
-2. Create organization
-3. Create membership
-4. Return user information
+- Node.js >= 18.x
+- npm >= 9.x
+- Backend running at `http://localhost:8080`
 
 ---
 
-# Login Flow
+## Installation & Setup
 
-## Endpoint
+### 1. Clone the repo
 
-```http
-POST /api/auth/login
+```bash
+git clone https://github.com/your-username/vessify-frontend.git
+cd vessify-frontend/vessify-frontend
 ```
 
-### Request
+### 2. Install dependencies
 
-```json
-{
-  "email": "john@example.com",
-  "password": "password123"
-}
+```bash
+npm install
 ```
 
-### Process
+### 3. Configure environment
 
-1. Validate credentials
-2. Create Better Auth session
-3. Generate JWT
-4. Return session and token
-
-JWT Expiry:
-
-```text
-7 days
+```bash
+cp .env.example .env.local
 ```
 
----
-
-# Database Schema
-
-## User
-
-Fields:
-
-* id
-* email
-* createdAt
-* updatedAt
-
-## Organization
-
-Fields:
-
-* id
-* name
-* createdAt
-* updatedAt
-
-## Membership
-
-Fields:
-
-* id
-* userId
-* organizationId
-* role
-
-## Transaction
-
-Fields:
-
-* id
-* userId
-* organizationId
-* date
-* description
-* amount
-* balance
-* confidence
-* createdAt
-* updatedAt
-
----
-
-# Required Indexes
-
-Create indexes on:
-
-* userId
-* organizationId
-* createdAt
-* date
-
----
-
-# Authentication Middleware
-
-Create middleware that:
-
-1. Validates session
-2. Validates JWT
-3. Extracts authenticated user
-4. Extracts organization
-5. Attaches both to request context
-
-Request context should contain:
-
-```ts
-userId
-organizationId
-```
-
----
-
-# Transaction Extraction
-
-## Endpoint
-
-```http
-POST /api/transactions/extract
-```
-
-Protected route.
-
-### Request
-
-```json
-{
-  "text": "raw transaction text"
-}
-```
-
----
-
-# Extraction Engine
-
-Implement regex-based extraction.
-
-Do NOT use AI models.
-
-Must support all provided samples.
-
-## Sample 1
-
-Input:
-
-```text
-Date: 11 Dec 2025
-Description: STARBUCKS COFFEE MUMBAI
-Amount: -420.00
-Balance after transaction: 18,420.50
-```
-
-Expected Output:
-
-```json
-{
-  "date": "2025-12-11",
-  "description": "STARBUCKS COFFEE MUMBAI",
-  "amount": -420,
-  "balance": 18420.50,
-  "confidence": 1
-}
-```
-
-## Sample 2
-
-Input:
-
-```text
-Uber Ride * Airport Drop
-12/11/2025 → ₹1,250.00 debited
-Available Balance → ₹17,170.50
-```
-
-Confidence:
-
-```text
-0.9
-```
-
-## Sample 3
-
-Input:
-
-```text
-txn123 2025-12-10 Amazon.in Order #403-1234567-8901234 ₹2,999.00 Dr Bal 14171.50 Shopping
-```
-
-Confidence:
-
-```text
-0.75
-```
-
----
-
-# Transaction Storage
-
-After extraction:
-
-Save transaction in PostgreSQL.
-
-Populate:
-
-* userId
-* organizationId
-
-using authenticated context.
-
-Never trust request body values for ownership.
-
----
-
-# Data Isolation
-
-Critical requirement.
-
-Every query must include organization filtering.
-
-Example:
-
-```ts
-where: {
-  organizationId: auth.organizationId
-}
-```
-
-Never expose another organization's records.
-
----
-
-# Get Transactions
-
-## Endpoint
-
-```http
-GET /api/transactions
-```
-
-Protected route.
-
-### Pagination
-
-Use cursor-based pagination.
-
-Query Parameters:
-
-```http
-?cursor=xxx&limit=10
-```
-
-Response:
-
-```json
-{
-  "data": [],
-  "nextCursor": "..."
-}
-```
-
-Order by:
-
-```text
-createdAt DESC
-```
-
----
-
-# Validation
-
-Use Zod.
-
-Validate:
-
-* Register Request
-* Login Request
-* Transaction Extraction Request
-
-Return consistent validation errors.
-
----
-
-# Error Handling
-
-Implement centralized error handling.
-
-Response format:
-
-```json
-{
-  "success": false,
-  "message": "Unauthorized"
-}
-```
-
----
-
-# Tests
-
-Use Vitest.
-
-Minimum 6 tests required.
-
-## Authentication Tests
-
-* Register User
-* Login User
-
-## Extraction Tests
-
-* Sample 1 Parsing
-* Sample 2 Parsing
-* Sample 3 Parsing
-
-## Security Test
-
-* Organization Isolation
-
-Verify User A cannot access User B transactions.
-
----
-
-# Environment Variables
-
-Create `.env.example`
+Fill in `.env.local`:
 
 ```env
-DATABASE_URL=
+NEXTAUTH_SECRET=your_nextauth_secret_here
+NEXTAUTH_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:8080
+BETTER_AUTH_URL=http://localhost:8080
+```
 
-BETTER_AUTH_SECRET=
+### 4. Run development server
 
-BETTER_AUTH_URL=
+```bash
+npm run dev
+```
 
-JWT_SECRET=
+Open [http://localhost:3000](http://localhost:3000)
 
-PORT=3001
+### 5. Build for production
+
+```bash
+npm run build
+npm start
 ```
 
 ---
 
-# API Base URL
+## Key Files Explained
 
-```text
-http://localhost:3001
+### `app/(auth)/`
+Route group for public auth pages. Pages inside this group do **not** share the dashboard layout. Both `/login` and `/register` use shadcn `<Form>`, `<Input>`, and `<Button>` components and call the Better Auth backend endpoints directly.
+
+### `app/(dashboard)/dashboard/page.tsx`
+Protected Server Component. Checked by `middleware.ts` — unauthenticated users are redirected to `/login`. Renders three sections:
+- **Stats cards** — total transactions, total debits (₹), average confidence score
+- **Transaction Extractor** — textarea + "Parse & Save" button
+- **Recent Transactions** — paginated shadcn `<Table>` with cursor-based "Load more"
+
+### `components/`
+All reusable UI components live here:
+- `transaction-extractor.tsx` — controlled textarea, loading state, error toast
+- `transaction-table.tsx` — shadcn Table + cursor pagination logic
+- `stats-cards.tsx` — three summary metric cards
+- `ui/` — auto-generated shadcn primitives (Button, Card, Table, Form, Input, Badge, etc.)
+
+### `lib/`
+- `auth.ts` — Better Auth client config, session helpers
+- `api.ts` — typed fetch wrapper that auto-attaches `Authorization: Bearer <token>`
+- `utils.ts` — `cn()` class merge helper (clsx + tailwind-merge)
+
+### `components.json`
+shadcn/ui registry config — defines component style (`default`), Tailwind CSS path, aliases for `@/components` and `@/lib`.
+
+### `next.config.ts`
+- Enables strict mode
+- Configures API rewrites if needed (`/api/*` → backend)
+- Sets `output: 'standalone'` for containerised deployment
+
+### `tsconfig.json`
+Strict TypeScript:
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "paths": {
+      "@/*": ["./*"]
+    }
+  }
+}
 ```
 
 ---
 
-# Definition of Done
+## Available Scripts
 
-The backend is complete only when:
-
-* TypeScript strict mode enabled
-* Prisma migrations working
-* Better Auth fully integrated
-* JWT plugin enabled
-* Organization plugin enabled
-* Protected routes working
-* Transaction extraction working
-* Multi-tenancy enforced
-* Cursor pagination implemented
-* Vitest tests passing
-* Clean architecture maintained
+```bash
+npm run dev        # Start dev server with hot reload (localhost:3000)
+npm run build      # Production build
+npm start          # Serve production build
+npm run lint       # ESLint check
+```
 
 ---
 
-# Security Requirements
+## Authentication Flow
 
-Never trust client-provided:
+```
+User visits /dashboard
+  → middleware.ts checks Better Auth session
+  → No session? Redirect to /login
+  → /login form → POST /api/auth/login (backend)
+  → Backend returns JWT (7-day expiry)
+  → Session stored → redirect back to /dashboard
+  → All API calls attach Bearer token via lib/api.ts
+```
 
-* userId
-* organizationId
+---
 
-Always derive identity from Better Auth session context.
+## Pages & Routes
 
-Security and data isolation are the highest priority requirements of this assignment.
+| Route | Access | Description |
+|-------|--------|-------------|
+| `/` | Public | Landing page — hero, features, how it works |
+| `/login` | Public | Email + password login |
+| `/register` | Public | New account creation |
+| `/dashboard` | Protected | Main app — extract + view transactions |
+
+---
+
+## Screenshots
+
+| Screen | Description |
+|--------|-------------|
+| ![](./screenshot/Screenshot%20(1620).png) | Landing page — hero section |
+| ![](./screenshot/Screenshot%20(1621).png) | Features + How It Works section |
+| ![](./screenshot/Screenshot%20(1622).png) | Dashboard — stats + extractor |
+| ![](./screenshot/Screenshot%20(1623).png) | Dashboard — transaction table |
+
+---
+
+## .env.example
+
+```env
+# Auth
+NEXTAUTH_SECRET=
+NEXTAUTH_URL=http://localhost:3000
+
+# Backend API
+NEXT_PUBLIC_API_URL=http://localhost:8080
+BETTER_AUTH_URL=http://localhost:8080
+```
+
+---
+
+## Test Users
+
+Seeded via backend `npm run seed`:
+
+| Name | Email | Password |
+|------|-------|----------|
+| Alice | alice@test.com | Test@1234 |
+| Bob | bob@test.com | Test@1234 |
+
+Alice and Bob belong to separate organizations — neither can access the other's transactions.
+
+---
+
+## Deployment (Vercel)
+
+```bash
+npm i -g vercel
+vercel --prod
+```
+
+Add all `.env.local` variables in Vercel Dashboard → Project → Settings → Environment Variables.
+
+---
+
+## AI Tools Used
+
+This project was built with assistance from **Claude (Anthropic)** and **Cursor** for code generation, architecture decisions, and debugging. Every line of code has been reviewed and understood before committing.
+
+---
+
+## Approach to Better Auth Integration
+
+Better Auth manages session creation and organization-level membership on the backend. The frontend uses Better Auth's client SDK to read the active session token, which is then injected into every API request via `lib/api.ts`. Route protection is handled entirely server-side in `middleware.ts` using `getToken()` — so access control never relies on client-side state, eliminating any possibility of bypassing protected routes through browser manipulation.
